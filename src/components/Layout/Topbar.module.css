@@ -1,0 +1,140 @@
+.topbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gray-100);
+  padding: 0 var(--space-6);
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.menuBtn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--gray-600);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  align-items: center;
+  justify-content: center;
+}
+
+.collapseBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--gray-600);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuBtn:hover,
+.collapseBtn:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.divider {
+  font-size: 11px;
+}
+
+.activePage {
+  color: var(--gray-900);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.date {
+  font-size: 13px;
+  color: var(--gray-500);
+  font-weight: 600;
+  background: var(--gray-100);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+}
+
+.separator {
+  width: 1px;
+  height: 20px;
+  background: var(--gray-200);
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  transition: all var(--transition);
+}
+
+.logoutBtn:hover {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+@media (max-width: 768px) {
+  .collapseBtn {
+    display: none;
+  }
+  .menuBtn {
+    display: flex;
+  }
+  .date {
+    display: none;
+  }
+  .separator {
+    display: none;
+  }
+  .logoutText {
+    display: none;
+  }
+  .topbar {
+    padding: 0 var(--space-4);
+  }
+  .logoutBtn {
+    padding: 8px;
+  }
+}
