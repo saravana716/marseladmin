@@ -62,6 +62,12 @@ export default function Sidebar({ collapsed, mobileOpen, toggleMobile, counts })
                   {item.label === 'Products' && counts?.products !== undefined && (
                     <span className={styles.navBadge}>{counts.products}</span>
                   )}
+                  {item.label === 'Orders' && counts?.orders !== undefined && (
+                    <span className={styles.navBadge}>{counts.orders}</span>
+                  )}
+                  {item.label === 'Customers' && counts?.customers !== undefined && (
+                    <span className={styles.navBadge}>{counts.customers}</span>
+                  )}
                   {item.label === 'Price List' && counts?.priceList !== undefined && (
                     <span className={styles.navBadge}>{counts.priceList}</span>
                   )}

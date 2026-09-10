@@ -6,7 +6,7 @@ import EmptyState from '../components/UI/EmptyState'
 import Table from '../components/UI/Table'
 import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
-import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { formatCurrency, formatDate, formatDateTime, ORDER_STATUSES, getInitials, truncate } from '../lib/utils'
 
 export default function Orders() {
@@ -23,8 +23,7 @@ export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [modalLoading, setModalLoading] = useState(false)
 
-  // Receipt management states
-  const [uploadingReceiptId, setUploadingReceiptId] = useState(null)
+  // Receipt preview modal state
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null)
 
   const fetchOrders = async () => {
@@ -84,55 +83,6 @@ export default function Orders() {
     }
   }
 
-  const handleReceiptUpload = async (orderId, file) => {
-    if (!file) return
-    try {
-      setUploadingReceiptId(orderId)
-      const receiptUrl = await uploadImage(file, BUCKETS.RECEIPTS, 'receipt-')
-      const { error } = await supabase
-        .from('orders')
-        .update({ receipt_url: receiptUrl })
-        .eq('id', orderId)
-
-      if (error) throw error
-
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, receipt_url: receiptUrl } : o))
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder(prev => ({ ...prev, receipt_url: receiptUrl }))
-      }
-    } catch (err) {
-      alert('Receipt upload failed: ' + err.message)
-    } finally {
-      setUploadingReceiptId(null)
-    }
-  }
-
-  const handleDeleteReceipt = async (orderId, currentReceiptUrl) => {
-    if (!window.confirm('Are you sure you want to remove this payment receipt?')) return
-    try {
-      setUploadingReceiptId(orderId)
-      const { error } = await supabase
-        .from('orders')
-        .update({ receipt_url: null })
-        .eq('id', orderId)
-
-      if (error) throw error
-
-      if (currentReceiptUrl) {
-        await deleteImage(currentReceiptUrl, BUCKETS.RECEIPTS)
-      }
-
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, receipt_url: null } : o))
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder(prev => ({ ...prev, receipt_url: null }))
-      }
-    } catch (err) {
-      alert('Receipt removal failed: ' + err.message)
-    } finally {
-      setUploadingReceiptId(null)
-    }
-  }
-
   const handleOpenDetail = async (order) => {
     setSelectedOrder(order)
     setDetailModalOpen(true)
@@ -181,7 +131,7 @@ export default function Orders() {
             📦 Orders
             <span className={styles.badge}>{filtered.length}</span>
           </h1>
-          <p className={styles.pageSubtitle}>View orders, update status, and manage payment receipts</p>
+          <p className={styles.pageSubtitle}>View customer orders, receipts, and order status</p>
         </div>
         <Button variant="outline" onClick={fetchOrders}>🔄 Refresh</Button>
       </div>
@@ -216,7 +166,7 @@ export default function Orders() {
           <Spinner size="lg" />
         </div>
       ) : filtered.length > 0 ? (
-        <Table headers={['Order ID', 'Customer', 'Status', 'Amount', 'Receipt', 'Date', 'Update Status', 'Actions']}>
+        <Table headers={['Order ID', 'Customer', 'Status', 'Amount', 'Customer Receipt', 'Date', 'Update Status', 'Actions']}>
           {filtered.map(order => (
             <tr key={order.id}>
               <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>
@@ -239,33 +189,16 @@ export default function Orders() {
               </td>
               <td>
                 <div className={styles.receiptCell}>
-                  {uploadingReceiptId === order.id ? (
-                    <Spinner size="sm" />
-                  ) : order.receipt_url ? (
+                  {(order.payment_screenshot_url || order.receipt_url) ? (
                     <button
                       className={styles.receiptBadgeBtn}
-                      onClick={() => setReceiptPreviewUrl(order.receipt_url)}
-                      title="Click to view full receipt"
+                      onClick={() => setReceiptPreviewUrl(order.payment_screenshot_url || order.receipt_url)}
+                      title="Click to view payment receipt uploaded from website"
                     >
                       📄 View Receipt
                     </button>
                   ) : (
-                    <>
-                      <input
-                        type="file"
-                        id={`receipt-input-${order.id}`}
-                        style={{ display: 'none' }}
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                          if (e.target.files[0]) {
-                            handleReceiptUpload(order.id, e.target.files[0])
-                          }
-                        }}
-                      />
-                      <label htmlFor={`receipt-input-${order.id}`} className={styles.uploadLabelBtn}>
-                        ⬆️ Upload Receipt
-                      </label>
-                    </>
+                    <span style={{ color: 'var(--gray-400)', fontSize: '13px' }}>—</span>
                   )}
                 </div>
               </td>
@@ -361,74 +294,32 @@ export default function Orders() {
               </div>
             </div>
 
-            {/* Payment Receipt Block */}
+            {/* Payment Receipt Block (Read-only view) */}
             <div style={{ marginBottom: '20px' }}>
-              <span className={styles.label} style={{ marginBottom: '8px', display: 'block' }}>Payment Receipt</span>
+              <span className={styles.label} style={{ marginBottom: '8px', display: 'block' }}>Customer Payment Screenshot</span>
               <div className={styles.receiptCard}>
-                {uploadingReceiptId === selectedOrder.id ? (
-                  <div style={{ textAlign: 'center', padding: '16px' }}>
-                    <Spinner size="md" />
-                    <div style={{ fontSize: '13px', marginTop: '8px', color: 'var(--gray-500)' }}>Uploading receipt...</div>
-                  </div>
-                ) : selectedOrder.receipt_url ? (
+                {(selectedOrder.payment_screenshot_url || selectedOrder.receipt_url) ? (
                   <div className={styles.receiptPreviewContainer}>
                     <div
                       className={styles.receiptImgWrapper}
-                      onClick={() => setReceiptPreviewUrl(selectedOrder.receipt_url)}
-                      title="Click to expand full receipt"
+                      onClick={() => setReceiptPreviewUrl(selectedOrder.payment_screenshot_url || selectedOrder.receipt_url)}
+                      title="Click to view full receipt"
                     >
-                      <img src={selectedOrder.receipt_url} alt="Payment Receipt" />
+                      <img src={selectedOrder.payment_screenshot_url || selectedOrder.receipt_url} alt="Customer Payment Receipt" />
                     </div>
                     <div className={styles.receiptActions}>
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => setReceiptPreviewUrl(selectedOrder.receipt_url)}
+                        onClick={() => setReceiptPreviewUrl(selectedOrder.payment_screenshot_url || selectedOrder.receipt_url)}
                       >
                         👁️ View Full Receipt
                       </Button>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="file"
-                          id={`modal-receipt-replace-${selectedOrder.id}`}
-                          style={{ display: 'none' }}
-                          accept="image/*,.pdf"
-                          onChange={(e) => {
-                            if (e.target.files[0]) {
-                              handleReceiptUpload(selectedOrder.id, e.target.files[0])
-                            }
-                          }}
-                        />
-                        <label htmlFor={`modal-receipt-replace-${selectedOrder.id}`} className={styles.uploadLabelBtn}>
-                          ✏️ Replace Receipt
-                        </label>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteReceipt(selectedOrder.id, selectedOrder.receipt_url)}
-                        >
-                          🗑️ Remove
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <input
-                      type="file"
-                      id={`modal-receipt-upload-${selectedOrder.id}`}
-                      style={{ display: 'none' }}
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        if (e.target.files[0]) {
-                          handleReceiptUpload(selectedOrder.id, e.target.files[0])
-                        }
-                      }}
-                    />
-                    <label htmlFor={`modal-receipt-upload-${selectedOrder.id}`} className={styles.receiptDropzone}>
-                      <span style={{ fontSize: '28px' }}>📤</span>
-                      <span className={styles.receiptDropzoneText}>Click to upload payment receipt or transfer screenshot</span>
-                    </label>
+                  <div style={{ fontStyle: 'italic', color: 'var(--gray-400)', fontSize: '13.5px' }}>
+                    No payment receipt uploaded by customer for this order.
                   </div>
                 )}
               </div>
@@ -487,7 +378,7 @@ export default function Orders() {
       <Modal
         open={!!receiptPreviewUrl}
         onClose={() => setReceiptPreviewUrl(null)}
-        title="📄 Payment Receipt Preview"
+        title="📄 Customer Payment Receipt"
         size="lg"
         footer={
           <div style={{ display: 'flex', gap: '8px' }}>

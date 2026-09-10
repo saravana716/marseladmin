@@ -4,108 +4,85 @@ import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import styles from './AppLayout.module.css'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 export default function AppLayout() {
+  const { session } = useAuth()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [counts, setCounts] = useState({ categories: 0, products: 0, priceList: 0, gallery: 0, gst: 0, marquee: 0, settings: 0 })
+  const [counts, setCounts] = useState({
+    categories: 0,
+    products: 0,
+    orders: 0,
+    customers: 0,
+    priceList: 0,
+    gallery: 0,
+    marquee: 0,
+    settings: 0
+  })
   const location = useLocation()
+
+  // Helper to fetch count for a single table safely with fallback
+  const getCount = async (table) => {
+    try {
+      const { count, data, error } = await supabase.from(table).select('id', { count: 'exact' })
+      if (error || count === null || count === undefined) {
+        const { data: list } = await supabase.from(table).select('id')
+        return list ? list.length : 0
+      }
+      return count
+    } catch (e) {
+      console.error(`Error getting count for ${table}:`, e)
+      return 0
+    }
+  }
 
   // Fetch counts and listen to database changes in realtime
   useEffect(() => {
     async function fetchCounts() {
-      try {
-        const [catRes, prodRes, priceRes, gallRes, gstRes, marqRes, settRes] = await Promise.all([
-          supabase.from('categories').select('id', { count: 'exact', head: true }),
-          supabase.from('products').select('id', { count: 'exact', head: true }),
-          supabase.from('price_list').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-          supabase.from('gallery').select('id', { count: 'exact', head: true }),
-          supabase.from('gst_rates').select('id', { count: 'exact', head: true }),
-          supabase.from('marquee').select('id', { count: 'exact', head: true }),
-          supabase.from('settings').select('id', { count: 'exact', head: true }),
-        ])
-        setCounts({
-          categories: catRes.count || 0,
-          products: prodRes.count || 0,
-          priceList: priceRes.count || 0,
-          gallery: gallRes.count || 0,
-          gst: gstRes.count || 0,
-          marquee: marqRes.count || 0,
-          settings: settRes.count || 0,
-        })
-      } catch (err) {
-        console.warn('Error fetching counts:', err)
-      }
+      const [categories, products, orders, customers, priceList, gallery, marquee, settings] = await Promise.all([
+        getCount('categories'),
+        getCount('products'),
+        getCount('orders'),
+        getCount('customers'),
+        getCount('price_list'),
+        getCount('gallery'),
+        getCount('marquee'),
+        getCount('settings'),
+      ])
+
+      setCounts({
+        categories,
+        products,
+        orders,
+        customers,
+        priceList,
+        gallery,
+        marquee,
+        settings,
+      })
     }
 
     fetchCounts()
 
-    // Realtime channel for Category table changes
-    const categoriesChannel = supabase
-      .channel('categories-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
+    // Realtime subscription channels
+    const channels = [
+      supabase.channel('categories-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCounts),
+      supabase.channel('products-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchCounts),
+      supabase.channel('orders-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchCounts),
+      supabase.channel('customers-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, fetchCounts),
+      supabase.channel('price-list-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'price_list' }, fetchCounts),
+      supabase.channel('gallery-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, fetchCounts),
+      supabase.channel('marquee-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'marquee' }, fetchCounts),
+      supabase.channel('settings-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, fetchCounts),
+    ]
 
-    // Realtime channel for Product table changes
-    const productsChannel = supabase
-      .channel('products-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
-
-    // Realtime channel for Price List table changes
-    const priceListChannel = supabase
-      .channel('price-list-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'price_list' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
-
-    // Realtime channel for Gallery table changes
-    const galleryChannel = supabase
-      .channel('gallery-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
-
-    // Realtime channel for GST table changes
-    const gstChannel = supabase
-      .channel('gst-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gst_rates' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
-
-    // Realtime channel for Marquee table changes
-    const marqueeChannel = supabase
-      .channel('marquee-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'marquee' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
-
-    // Realtime channel for Settings table changes
-    const settingsChannel = supabase
-      .channel('settings-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-        fetchCounts()
-      })
-      .subscribe()
+    channels.forEach(ch => ch.subscribe())
 
     return () => {
-      supabase.removeChannel(categoriesChannel)
-      supabase.removeChannel(productsChannel)
-      supabase.removeChannel(priceListChannel)
-      supabase.removeChannel(galleryChannel)
-      supabase.removeChannel(gstChannel)
-      supabase.removeChannel(marqueeChannel)
-      supabase.removeChannel(settingsChannel)
+      channels.forEach(ch => supabase.removeChannel(ch))
     }
-  }, [location.pathname])
+  }, [location.pathname, session])
 
   return (
     <div className={styles.layout}>

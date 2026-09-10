@@ -51,11 +51,13 @@ CREATE TABLE IF NOT EXISTS orders (
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   notes TEXT,
   receipt_url TEXT,
+  payment_screenshot_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure receipt_url column exists if table already created
+-- Ensure receipt_url and payment_screenshot_url columns exist if table already created
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
 
 -- Status check constraint
 ALTER TABLE orders ADD CONSTRAINT orders_status_check
