@@ -3,6 +3,7 @@ import styles from '../styles/Products.module.css'
 import Modal from '../components/UI/Modal'
 import Button from '../components/UI/Button'
 import ImageUpload from '../components/UI/ImageUpload'
+import VideoUpload from '../components/UI/VideoUpload'
 import EmptyState from '../components/UI/EmptyState'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Table from '../components/UI/Table'
@@ -10,7 +11,7 @@ import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
 import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
 import { formatCurrency, stockColor, truncate, formatDate } from '../lib/utils'
-import { Eye, Edit3, Trash2 } from 'lucide-react'
+import { Eye, Edit3, Trash2, Video } from 'lucide-react'
 
 export default function Products() {
   const [products, setProducts] = useState([])
@@ -41,6 +42,8 @@ export default function Products() {
   const [categoryId, setCategoryId] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [existingImageUrl, setExistingImageUrl] = useState('')
+  const [videoFile, setVideoFile] = useState(null)
+  const [existingVideoUrl, setExistingVideoUrl] = useState('')
   const [typeSelect, setTypeSelect] = useState('')
   const [typeCustom, setTypeCustom] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -107,6 +110,8 @@ export default function Products() {
     setCategoryId('')
     setImageFile(null)
     setExistingImageUrl('')
+    setVideoFile(null)
+    setExistingVideoUrl('')
     setTypeSelect('')
     setTypeCustom('')
     setQuantity('')
@@ -123,6 +128,8 @@ export default function Products() {
     setCategoryId(p.category_id || '')
     setImageFile(null)
     setExistingImageUrl(p.image_url || '')
+    setVideoFile(null)
+    setExistingVideoUrl(p.video_url || '')
     setQuantity(p.quantity || '')
     if (['pcs', 'pkt', 'box', 'bag'].includes(p.type)) {
       setTypeSelect(p.type)
@@ -158,6 +165,20 @@ export default function Products() {
         }
       }
 
+      let finalVideoUrl = existingVideoUrl
+
+      if (videoFile) {
+        // Upload new video file
+        finalVideoUrl = await uploadImage(videoFile, BUCKETS.GALLERY, 'prod-vid-')
+
+        // Clean up previous video if editing
+        if (editingId && existingVideoUrl) {
+          await deleteImage(existingVideoUrl, BUCKETS.GALLERY)
+        }
+      } else if (!existingVideoUrl) {
+        finalVideoUrl = null
+      }
+
       const payload = {
         name,
         description: desc,
@@ -166,6 +187,7 @@ export default function Products() {
         stock: parseInt(stock) || 0,
         category_id: categoryId || null,
         image_url: finalImageUrl,
+        video_url: finalVideoUrl,
         type: typeSelect === 'other' ? typeCustom : typeSelect || null,
         quantity: quantity || null
       }
@@ -289,13 +311,20 @@ export default function Products() {
                     <div className={styles.cardCategory}>
                       {p.category?.name || 'Uncategorized'}
                     </div>
-                    {(p.type || p.quantity) && (
-                      <div className={styles.cardTypeQty}>
-                        {p.quantity || ''}
-                        {p.quantity && p.type ? ' • ' : ''}
-                        {p.type || ''}
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {p.video_url && (
+                        <span title="Video available" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                          <Video size={14} />
+                        </span>
+                      )}
+                      {(p.type || p.quantity) && (
+                        <div className={styles.cardTypeQty}>
+                          {p.quantity || ''}
+                          {p.quantity && p.type ? ' • ' : ''}
+                          {p.type || ''}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <h3 className={styles.cardName}>{p.name}</h3>
                   <div className={styles.cardPriceContainer}>
@@ -332,6 +361,11 @@ export default function Products() {
                     <div>
                       <div className={styles.tableName}>{p.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                        {p.video_url && (
+                          <span title="Video available" style={{ color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 600 }}>
+                            <Video size={13} /> Video
+                          </span>
+                        )}
                         {(p.type || p.quantity) && (
                           <span className={styles.tableTypeQty}>
                             {p.quantity || ''}
@@ -515,6 +549,14 @@ export default function Products() {
             />
           </div>
           <div className={styles.formGroup}>
+            <label className={styles.label}>Product Video (Optional)</label>
+            <VideoUpload
+              value={videoFile || existingVideoUrl}
+              onChange={setVideoFile}
+              placeholder="Select or drag product demo video file"
+            />
+          </div>
+          <div className={styles.formGroup}>
             <label className={styles.label}>Product Image</label>
             <ImageUpload
               value={imageFile || existingImageUrl}
@@ -594,6 +636,25 @@ export default function Products() {
             </div>
 
             <hr className={styles.viewDivider} />
+
+            {selectedProduct.video_url && (
+              <div style={{ marginBottom: '16px' }}>
+                <span className={styles.viewLabel}>Product Demo Video</span>
+                <div style={{ marginTop: '6px' }}>
+                  <video
+                    src={selectedProduct.video_url}
+                    controls
+                    style={{
+                      width: '100%',
+                      maxHeight: '260px',
+                      borderRadius: '8px',
+                      background: '#000',
+                      objectFit: 'contain'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <span className={styles.viewLabel}>Product Description</span>

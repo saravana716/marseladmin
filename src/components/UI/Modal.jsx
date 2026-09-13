@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import styles from './Modal.module.css'
 
-export default function Modal({ open, onClose, title, children, footer, size = 'md' }) {
+export default function Modal({ open, onClose, title, children, footer, size = 'md', zIndex, style }) {
   const overlayRef = useRef(null)
 
   useEffect(() => {
@@ -25,6 +25,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
     <div
       className={styles.overlay}
       ref={overlayRef}
+      style={{ ...(zIndex ? { zIndex } : {}), ...style }}
       onClick={(e) => { if (e.target === overlayRef.current) onClose?.() }}
     >
       <div className={`${styles.modal} ${styles[size]}`} role="dialog" aria-modal="true">
