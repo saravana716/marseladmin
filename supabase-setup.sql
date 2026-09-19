@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS products (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  serial_no TEXT,
   name TEXT NOT NULL,
   description TEXT,
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- Ensure all product columns exist if table was already created
+ALTER TABLE products ADD COLUMN IF NOT EXISTS serial_no TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price DECIMAL(10,2);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS type TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS quantity TEXT;

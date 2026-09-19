@@ -35,6 +35,7 @@ export default function Products() {
 
   // Form Fields
   const [name, setName] = useState('')
+  const [serialNo, setSerialNo] = useState('')
   const [desc, setDesc] = useState('')
   const [price, setPrice] = useState('')
   const [originalPrice, setOriginalPrice] = useState('')
@@ -90,6 +91,7 @@ export default function Products() {
       const q = search.toLowerCase()
       result = result.filter(p =>
         p.name.toLowerCase().includes(q) ||
+        (p.serial_no || '').toLowerCase().includes(q) ||
         (p.description || '').toLowerCase().includes(q) ||
         (p.category?.name || '').toLowerCase().includes(q)
       )
@@ -103,6 +105,7 @@ export default function Products() {
   const handleOpenAdd = () => {
     setEditingId(null)
     setName('')
+    setSerialNo('')
     setDesc('')
     setPrice('')
     setOriginalPrice('')
@@ -121,6 +124,7 @@ export default function Products() {
   const handleOpenEdit = (p) => {
     setEditingId(p.id)
     setName(p.name)
+    setSerialNo(p.serial_no || '')
     setDesc(p.description || '')
     setPrice(p.price.toString())
     setOriginalPrice(p.original_price ? p.original_price.toString() : '')
@@ -181,6 +185,7 @@ export default function Products() {
 
       const payload = {
         name,
+        serial_no: serialNo.trim() || null,
         description: desc,
         price: parseFloat(price) || 0,
         original_price: originalPrice ? parseFloat(originalPrice) : null,
@@ -272,7 +277,7 @@ export default function Products() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search products..."
+            placeholder="Search products by name, serial no..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -326,7 +331,14 @@ export default function Products() {
                       )}
                     </div>
                   </div>
-                  <h3 className={styles.cardName}>{p.name}</h3>
+                  <h3 className={styles.cardName}>
+                    {p.serial_no && (
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gray-500)', background: 'var(--gray-100)', padding: '1px 6px', borderRadius: '4px', marginRight: '6px' }}>
+                        #{p.serial_no}
+                      </span>
+                    )}
+                    {p.name}
+                  </h3>
                   <div className={styles.cardPriceContainer}>
                     <span className={styles.cardPrice}>{formatCurrency(p.price)}</span>
                     {p.original_price && (
@@ -350,9 +362,14 @@ export default function Products() {
             ))}
           </div>
         ) : (
-          <Table headers={['Product', 'Category', 'Price', 'Stock', 'Added', 'Actions']}>
+          <Table headers={['Serial No', 'Product', 'Category', 'Price', 'Stock', 'Added', 'Actions']}>
             {filtered.map(p => (
               <tr key={p.id}>
+                <td>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--gray-600)' }}>
+                    {p.serial_no ? `#${p.serial_no}` : '—'}
+                  </span>
+                </td>
                 <td>
                   <div className={styles.tableProduct}>
                     <div className={styles.tableImg}>
@@ -435,16 +452,28 @@ export default function Products() {
         }
       >
         <form onSubmit={handleSave} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Product Name *</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="e.g. 10cm Ground Fountain Sparkler"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+          <div className={styles.formRow}>
+            <div className={styles.formGroup} style={{ flex: 2 }}>
+              <label className={styles.label}>Product Name *</label>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="e.g. 10cm Ground Fountain Sparkler"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className={styles.formGroup} style={{ flex: 1 }}>
+              <label className={styles.label}>Serial No</label>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="e.g. SN-001"
+                value={serialNo}
+                onChange={(e) => setSerialNo(e.target.value)}
+              />
+            </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup} style={{ flex: 1 }}>
@@ -591,6 +620,14 @@ export default function Products() {
               </div>
               <div className={styles.viewProductInfo}>
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  {selectedProduct.serial_no && (
+                    <div>
+                      <span className={styles.viewLabel}>Serial No</span>
+                      <div style={{ fontWeight: '700', color: 'var(--gray-800)', fontSize: '14px', marginTop: '2px' }}>
+                        #{selectedProduct.serial_no}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <span className={styles.viewLabel}>Category</span>
                     <div style={{ marginTop: '2px' }}>

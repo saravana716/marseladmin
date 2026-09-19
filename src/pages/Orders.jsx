@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import styles from '../styles/Orders.module.css'
 import Modal from '../components/UI/Modal'
 import Button from '../components/UI/Button'
@@ -9,6 +9,78 @@ import Spinner from '../components/UI/Spinner'
 import { supabase } from '../lib/supabase'
 import { formatCurrency, formatDate, formatDateTime, ORDER_STATUSES, getInitials, truncate } from '../lib/utils'
 import { Plus, Trash2, Printer, Eye, Download, ShoppingBag, User, Package, FileText, CheckCircle } from 'lucide-react'
+
+function ProductSearchSelect({ products, value, onChange }) {
+  const [query, setQuery] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef(null)
+
+  const selectedProd = products.find(p => p.id === value)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredProducts = products.filter(p => {
+    if (!query) return true
+    const q = query.toLowerCase()
+    return (
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.serial_no || '').toLowerCase().includes(q)
+    )
+  })
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
+      <input
+        type="text"
+        className={styles.input}
+        placeholder="Type to search by name or serial no..."
+        value={isOpen ? query : (selectedProd ? `${selectedProd.serial_no ? `[#${selectedProd.serial_no}] ` : ''}${selectedProd.name}` : '')}
+        onFocus={() => {
+          setQuery('')
+          setIsOpen(true)
+        }}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          if (!isOpen) setIsOpen(true)
+        }}
+      />
+      {isOpen && (
+        <div className={styles.productDropdownList}>
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(p => (
+              <div
+                key={p.id}
+                className={styles.productDropdownItem}
+                onMouseDown={() => {
+                  onChange(p.id)
+                  setIsOpen(false)
+                  setQuery('')
+                }}
+              >
+                {p.serial_no && <span className={styles.productSerialBadge}>#{p.serial_no}</span>}
+                <span className={styles.productDropdownName}>{p.name}</span>
+                <span className={styles.productDropdownPrice}>{formatCurrency(p.price)}</span>
+                <span className={styles.productDropdownStock} style={{ color: p.stock > 0 ? 'var(--success, #059669)' : 'var(--danger, #dc2626)' }}>
+                  ({p.stock} left)
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className={styles.noProductMatch}>No product matches "{query}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -132,7 +204,7 @@ export default function Orders() {
     try {
       setAddLoading(true)
       const [prodRes, custRes] = await Promise.all([
-        supabase.from('products').select('id, name, price, stock, image_url, type, quantity').order('name'),
+        supabase.from('products').select('id, serial_no, name, price, stock, image_url, type, quantity').order('name'),
         supabase.from('customers').select('id, name, email, phone, address').order('name')
       ])
 
@@ -655,19 +727,11 @@ export default function Orders() {
             {orderItems.map((item, idx) => (
               <div key={idx} className={styles.itemRow}>
                 <div>
-                  <select
-                    className={styles.formSelect}
+                  <ProductSearchSelect
+                    products={productsCatalog}
                     value={item.productId}
-                    onChange={(e) => handleItemProductChange(idx, e.target.value)}
-                    required
-                  >
-                    <option value="">Select Product...</option>
-                    {productsCatalog.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — {formatCurrency(p.price)} (Stock: {p.stock})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(prodId) => handleItemProductChange(idx, prodId)}
+                  />
                 </div>
                 <div>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: item.stock > 0 ? 'var(--success, #059669)' : 'var(--danger, #dc2626)' }}>
