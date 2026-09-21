@@ -463,122 +463,124 @@ export default function Orders() {
 
   return (
     <div className={styles.orders}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>
-            📦 Orders
-            <span className={styles.badge}>{filtered.length}</span>
-          </h1>
-          <p className={styles.pageSubtitle}>Manage sales orders, create new admin orders, and generate invoices</p>
+      <div className="no-print">
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>
+              📦 Orders
+              <span className={styles.badge}>{filtered.length}</span>
+            </h1>
+            <p className={styles.pageSubtitle}>Manage sales orders, create new admin orders, and generate invoices</p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <Button variant="primary" onClick={handleOpenAddOrder} icon={<Plus size={16} />}>
+               Add Order
+            </Button>
+            <Button variant="outline" onClick={fetchOrders}>🔄 Refresh</Button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Button variant="primary" onClick={handleOpenAddOrder} icon={<Plus size={16} />}>
-             Add Order
-          </Button>
-          <Button variant="outline" onClick={fetchOrders}>🔄 Refresh</Button>
-        </div>
-      </div>
 
-      {/* Filter and search bar options */}
-      <div className={styles.filterBar}>
-        <div className={styles.searchBox}>
-          <span className={styles.searchIcon}>🔍</span>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search by order ID, customer..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* Filter and search bar options */}
+        <div className={styles.filterBar}>
+          <div className={styles.searchBox}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search by order ID, customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            className={styles.select}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            {ORDER_STATUSES.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
-        <select
-          className={styles.select}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {ORDER_STATUSES.map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </div>
 
-      {/* Orders Content */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px' }}>
-          <Spinner size="lg" />
-        </div>
-      ) : filtered.length > 0 ? (
-        <Table headers={['Order ID', 'Customer', 'Status', 'Amount', 'Customer Receipt', 'Date', 'Update Status', 'Actions']}>
-          {filtered.map(order => (
-            <tr key={order.id}>
-              <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                #{order.id.substring(0, 8).toUpperCase()}
-              </td>
-              <td>
-                <div className={styles.customerCell}>
-                  <div className={styles.avatar}>{getInitials(order.customer?.name)}</div>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{order.customer?.name || 'Guest'}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{order.customer?.email || '—'}</div>
+        {/* Orders Content */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px' }}>
+            <Spinner size="lg" />
+          </div>
+        ) : filtered.length > 0 ? (
+          <Table headers={['Order ID', 'Customer', 'Status', 'Amount', 'Customer Receipt', 'Date', 'Update Status', 'Actions']}>
+            {filtered.map(order => (
+              <tr key={order.id}>
+                <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                  #{order.id.substring(0, 8).toUpperCase()}
+                </td>
+                <td>
+                  <div className={styles.customerCell}>
+                    <div className={styles.avatar}>{getInitials(order.customer?.name)}</div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{order.customer?.name || 'Guest'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{order.customer?.email || '—'}</div>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td>
-                <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
-              </td>
-              <td style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
-                {formatCurrency(order.total_amount)}
-              </td>
-              <td>
-                <div className={styles.receiptCell}>
-                  {(order.payment_screenshot_url || order.receipt_url) ? (
-                    <button
-                      className={styles.receiptBadgeBtn}
-                      onClick={() => setReceiptPreviewUrl(order.payment_screenshot_url || order.receipt_url)}
-                      title="Click to view payment receipt uploaded from website"
-                    >
-                      📄 View Receipt
-                    </button>
-                  ) : (
-                    <span style={{ color: 'var(--gray-400)', fontSize: '13px' }}>—</span>
-                  )}
-                </div>
-              </td>
-              <td style={{ fontSize: '13px', color: 'var(--gray-400)' }}>
-                {formatDate(order.created_at)}
-              </td>
-              <td>
-                <select
-                  className={styles.statusSelect}
-                  value={order.status}
-                  onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                >
-                  {ORDER_STATUSES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <Button variant="outline" size="sm" onClick={() => handleOpenDetail(order)}>
-                    👁️ View
-                  </Button>
-                  <Button variant="primary" size="sm" onClick={() => handleOpenInvoice(order)}>
-                    📄 Invoice
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      ) : (
-        <EmptyState
-          icon="📦"
-          title="No orders found"
-          text="Use '➕ Add Order' above to create a new admin order or adjust search filter."
-        />
-      )}
+                </td>
+                <td>
+                  <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                </td>
+                <td style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                  {formatCurrency(order.total_amount)}
+                </td>
+                <td>
+                  <div className={styles.receiptCell}>
+                    {(order.payment_screenshot_url || order.receipt_url) ? (
+                      <button
+                        className={styles.receiptBadgeBtn}
+                        onClick={() => setReceiptPreviewUrl(order.payment_screenshot_url || order.receipt_url)}
+                        title="Click to view payment receipt uploaded from website"
+                      >
+                        📄 View Receipt
+                      </button>
+                    ) : (
+                      <span style={{ color: 'var(--gray-400)', fontSize: '13px' }}>—</span>
+                    )}
+                  </div>
+                </td>
+                <td style={{ fontSize: '13px', color: 'var(--gray-400)' }}>
+                  {formatDate(order.created_at)}
+                </td>
+                <td>
+                  <select
+                    className={styles.statusSelect}
+                    value={order.status}
+                    onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                  >
+                    {ORDER_STATUSES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <Button variant="outline" size="sm" onClick={() => handleOpenDetail(order)}>
+                      👁️ View
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={() => handleOpenInvoice(order)}>
+                      📄 Invoice
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        ) : (
+          <EmptyState
+            icon="📦"
+            title="No orders found"
+            text="Use '➕ Add Order' above to create a new admin order or adjust search filter."
+          />
+        )}
+      </div>
 
       {/* ─── ADD ORDER MODAL ─── */}
       <Modal

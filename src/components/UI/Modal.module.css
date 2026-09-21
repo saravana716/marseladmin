@@ -131,3 +131,29 @@
     justify-content: center;
   }
 }
+
+@media print {
+  .overlay {
+    position: static !important;
+    background: transparent !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+  .modal {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+  .body {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .header, .footer {
+    display: none !important;
+  }
+}
+

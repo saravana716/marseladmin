@@ -203,4 +203,13 @@ input, select, textarea {
   to { transform: rotate(360deg); }
 }
 
-
+@media print {
+  html, body, #root {
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

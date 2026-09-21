@@ -671,24 +671,13 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .invoicePrintArea, .invoicePrintArea * {
-    visibility: visible;
-  }
   .invoicePrintArea {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: auto;
-    margin: 0;
-    padding: 30px;
-    border: none;
-    box-shadow: none;
-    background: white;
-    z-index: 99999;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
   }
 }
 

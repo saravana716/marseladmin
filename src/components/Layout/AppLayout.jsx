@@ -86,18 +86,22 @@ export default function AppLayout() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
-        toggleMobile={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        counts={counts}
-      />
+      <div className="no-print">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          mobileOpen={mobileSidebarOpen}
+          toggleMobile={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          counts={counts}
+        />
+      </div>
       
       <div className={`${styles.main} ${sidebarCollapsed ? styles.expanded : ''}`}>
-        <Topbar
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-          onToggleMobile={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        />
+        <div className="no-print">
+          <Topbar
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onToggleMobile={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          />
+        </div>
         <main className={styles.content}>
           <Outlet />
         </main>

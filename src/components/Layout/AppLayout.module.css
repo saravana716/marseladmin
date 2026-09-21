@@ -47,3 +47,17 @@
     padding: var(--space-4);
   }
 }
+
+@media print {
+  .layout, .main, .content {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
