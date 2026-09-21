@@ -25,7 +25,7 @@ export default function CategoryChart({ data }) {
             {payload[0].name}
           </p>
           <p style={{ margin: '3px 0 0 0', fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>
-            ₹{payload[0].value.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+            Revenue: ₹{payload[0].value.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
           </p>
         </div>
       )
@@ -38,26 +38,31 @@ export default function CategoryChart({ data }) {
     return (
       <ul style={{
         listStyle: 'none',
-        padding: 0,
-        margin: '10px 0 0 0',
+        padding: '0 10px 0 0',
+        margin: 0,
         display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: '12px',
+        flexDirection: 'column',
+        gap: '10px',
         fontSize: '12px',
         fontFamily: 'Inter',
-        color: 'var(--gray-600)'
+        color: 'var(--gray-600)',
+        maxHeight: '280px',
+        overflowY: 'auto',
+        width: '140px'
       }}>
         {payload.map((entry, index) => (
-          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{
-              width: '8px',
-              height: '8px',
+              width: '10px',
+              height: '10px',
               borderRadius: '50%',
               backgroundColor: entry.color,
-              display: 'inline-block'
+              display: 'inline-block',
+              flexShrink: 0
             }} />
-            <span>{entry.value}</span>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={entry.value}>
+              {entry.value}
+            </span>
           </li>
         ))}
       </ul>
@@ -65,15 +70,15 @@ export default function CategoryChart({ data }) {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center' }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data}
-            cx="50%"
-            cy="45%"
-            innerRadius="65%"
-            outerRadius="85%"
+            cx="35%"
+            cy="50%"
+            innerRadius="55%"
+            outerRadius="75%"
             paddingAngle={3}
             dataKey="value"
           >
@@ -82,7 +87,13 @@ export default function CategoryChart({ data }) {
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
-          <Legend content={renderLegend} verticalAlign="bottom" />
+          <Legend 
+            content={renderLegend} 
+            layout="vertical" 
+            verticalAlign="middle" 
+            align="right" 
+            wrapperStyle={{ right: 0 }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
