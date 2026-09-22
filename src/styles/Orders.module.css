@@ -482,6 +482,22 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.itemsHeaderContainer {
+  position: sticky;
+  top: -14px;
+  background: var(--gray-50);
+  z-index: 10;
+  padding: 14px 0 10px 0;
+  margin: -14px 0 0 0;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .itemRowHeader {

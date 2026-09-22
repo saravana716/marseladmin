@@ -255,19 +255,28 @@ export default function Orders() {
 
   const handleItemProductChange = (index, prodId) => {
     const prod = productsCatalog.find(p => p.id === prodId)
-    setOrderItems(prev => prev.map((item, i) => {
-      if (i === index) {
-        return {
-          ...item,
-          productId: prodId,
-          productName: prod ? prod.name : '',
-          unitPrice: prod ? prod.price : 0,
-          stock: prod ? prod.stock : 0,
-          quantity: 1
+    setOrderItems(prev => {
+      const newItems = prev.map((item, i) => {
+        if (i === index) {
+          return {
+            ...item,
+            productId: prodId,
+            productName: prod ? prod.name : '',
+            unitPrice: prod ? prod.price : 0,
+            stock: prod ? prod.stock : 0,
+            quantity: 1
+          }
         }
+        return item
+      })
+      
+      // Auto-add new row if selecting a product on the last row
+      if (index === newItems.length - 1 && prodId) {
+        newItems.push({ productId: '', productName: '', unitPrice: 0, quantity: 1, stock: 0 })
       }
-      return item
-    }))
+      
+      return newItems
+    })
   }
 
   const handleItemQtyChange = (index, qty) => {
@@ -709,7 +718,7 @@ export default function Orders() {
 
           {/* Product Items Selection List */}
           <div className={styles.itemsSection}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className={styles.itemsHeaderContainer}>
               <span className={styles.label} style={{ color: 'var(--primary)', fontSize: '12px' }}>
                 📦 Order Line Items & Quantities
               </span>
@@ -747,6 +756,12 @@ export default function Orders() {
                     className={styles.input}
                     value={item.unitPrice}
                     onChange={(e) => handleItemPriceChange(idx, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (idx === orderItems.length - 1) handleAddItemRow()
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -756,6 +771,12 @@ export default function Orders() {
                     className={styles.input}
                     value={item.quantity}
                     onChange={(e) => handleItemQtyChange(idx, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (idx === orderItems.length - 1) handleAddItemRow()
+                      }
+                    }}
                   />
                 </div>
                 <div>
