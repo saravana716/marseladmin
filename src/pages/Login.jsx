@@ -64,7 +64,7 @@ export default function Login() {
         <div className={styles.loginCard}>
           {/* Brand */}
           <div className={styles.brand}>
-            <img src="/logo.png" alt="Marsel Traders" className={styles.logoImg} />
+            <img loading="lazy" src="/logo.png" alt="Marsel Traders" className={styles.logoImg} />
             <p className={styles.subtitle}>Sign in to manage your store</p>
           </div>
 

@@ -306,7 +306,7 @@ export default function Products() {
               <div key={p.id} className={styles.card}>
                 <div className={styles.cardImg}>
                   {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} />
+                    <img loading="lazy" src={p.image_url} alt={p.name} />
                   ) : (
                     <span>🎇</span>
                   )}
@@ -373,7 +373,7 @@ export default function Products() {
                 <td>
                   <div className={styles.tableProduct}>
                     <div className={styles.tableImg}>
-                      {p.image_url ? <img src={p.image_url} alt={p.name} /> : '🎆'}
+                      {p.image_url ? <img loading="lazy" src={p.image_url} alt={p.name} /> : '🎆'}
                     </div>
                     <div>
                       <div className={styles.tableName}>{p.name}</div>
@@ -613,7 +613,7 @@ export default function Products() {
             <div className={styles.viewProductGrid}>
               <div className={styles.viewProductImg}>
                 {selectedProduct.image_url ? (
-                  <img src={selectedProduct.image_url} alt={selectedProduct.name} />
+                  <img loading="lazy" src={selectedProduct.image_url} alt={selectedProduct.name} />
                 ) : (
                   <span>🎇</span>
                 )}

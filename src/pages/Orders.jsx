@@ -1002,7 +1002,7 @@ export default function Orders() {
                           <div className={styles.modalProductCell}>
                             <div className={styles.modalProductImg}>
                               {item.product?.image_url ? (
-                                <img src={item.product.image_url} alt={item.product_name} />
+                                <img loading="lazy" src={item.product.image_url} alt={item.product_name} />
                               ) : (
                                 <span>🎆</span>
                               )}
@@ -1046,7 +1046,7 @@ export default function Orders() {
       >
         {receiptPreviewUrl && (
           <div style={{ textAlign: 'center' }}>
-            <img src={receiptPreviewUrl} alt="Payment Receipt Full View" className={styles.fullReceiptImg} />
+            <img loading="lazy" src={receiptPreviewUrl} alt="Payment Receipt Full View" className={styles.fullReceiptImg} />
           </div>
         )}
       </Modal>

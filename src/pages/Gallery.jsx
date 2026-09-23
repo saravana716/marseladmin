@@ -253,7 +253,7 @@ export default function Gallery() {
             <div key={vid.id} className={styles.card}>
               <div className={styles.videoWrapper} onClick={() => handlePlayPreview(vid)}>
                 {vid.thumbnail_url ? (
-                  <img src={vid.thumbnail_url} alt={vid.title} className={styles.videoPlayer} style={{ objectFit: 'cover' }} />
+                  <img loading="lazy" src={vid.thumbnail_url} alt={vid.title} className={styles.videoPlayer} style={{ objectFit: 'cover' }} />
                 ) : (
                   <video src={vid.video_url} preload="metadata" className={styles.videoPlayer} />
                 )}

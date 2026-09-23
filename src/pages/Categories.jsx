@@ -221,7 +221,7 @@ export default function Categories() {
             <div key={cat.id} className={styles.card}>
               <div className={styles.cardImg}>
                 {cat.image_url ? (
-                  <img src={cat.image_url} alt={cat.name} />
+                  <img loading="lazy" src={cat.image_url} alt={cat.name} />
                 ) : (
                   <span className={styles.fallbackEmoji}>🎆</span>
                 )}
@@ -331,7 +331,7 @@ export default function Categories() {
             <div className={styles.viewCategoryGrid}>
               <div className={styles.viewCategoryImg}>
                 {selectedCategory.image_url ? (
-                  <img src={selectedCategory.image_url} alt={selectedCategory.name} />
+                  <img loading="lazy" src={selectedCategory.image_url} alt={selectedCategory.name} />
                 ) : (
                   <span>🎆</span>
                 )}
@@ -376,7 +376,7 @@ export default function Categories() {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justify: 'center' }}>
-                              {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🎆'}
+                              {p.image_url ? <img loading="lazy" src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🎆'}
                             </div>
                             <span style={{ fontWeight: '600' }}>{p.name}</span>
                           </div>

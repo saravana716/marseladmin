@@ -286,7 +286,7 @@ export default function Dashboard() {
                   <div key={p.id} className={styles.stockItem}>
                     <div className={styles.stockImg}>
                       {p.image_url ? (
-                        <img src={p.image_url} alt={p.name} />
+                        <img loading="lazy" src={p.image_url} alt={p.name} />
                       ) : (
                         <span>🎆</span>
                       )}
