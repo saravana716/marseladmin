@@ -16,8 +16,8 @@ export default function VideoUpload({
       alert('Please upload a valid video file (MP4, WEBM, MOV, etc.).')
       return
     }
-    if (file.size > 100 * 1024 * 1024) { // 100MB limit
-      alert('Video file size should be less than 100MB.')
+    if (file.size > 1 * 1024 * 1024) { // 1MB limit
+      alert('Video file size should be less than 1MB.')
       return
     }
     onChange(file)
@@ -107,7 +107,7 @@ export default function VideoUpload({
               <Film size={26} className={styles.mainIcon} />
             </div>
             <p className={styles.text}>{placeholder}</p>
-            <p className={styles.subtext}>MP4, WEBM, MOV up to 100MB</p>
+            <p className={styles.subtext}>MP4, WEBM, MOV (Max: 1MB only). Please compress before upload.</p>
             <button
               type="button"
               className={styles.browseButton}

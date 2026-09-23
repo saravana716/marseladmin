@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import styles from './ImageUpload.module.css'
 import { Camera, RefreshCw, X, Check, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react'
+import imageCompression from 'browser-image-compression'
 
 export default function ImageUpload({
   value,
@@ -22,16 +23,17 @@ export default function ImageUpload({
   const videoRef = useRef(null)
   const streamRef = useRef(null)
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return
     if (!file.type.startsWith('image/')) {
       alert('Please upload a valid image file.')
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size should be less than 10MB.')
+    if (file.size > 200 * 1024) {
+      alert('File size should be less than 200KB.')
       return
     }
+    
     onChange(file)
   }
 
@@ -181,7 +183,7 @@ export default function ImageUpload({
 
     const fileName = `product-camera-${Date.now()}.jpg`
     const file = new File([capturedBlob], fileName, { type: 'image/jpeg' })
-    onChange(file)
+    handleFile(file)
     handleCloseCamera()
   }
 
@@ -244,7 +246,7 @@ export default function ImageUpload({
               <ImageIcon size={28} className={styles.mainIcon} />
             </div>
             <p className={styles.text}>{placeholder}</p>
-            <p className={styles.subtext}>PNG, JPG, WEBP up to 10MB</p>
+            <p className={styles.subtext}>PNG, JPG, WEBP (Max: 200KB).</p>
 
             <div className={styles.buttonGroup} onClick={(e) => e.stopPropagation()}>
               <button
