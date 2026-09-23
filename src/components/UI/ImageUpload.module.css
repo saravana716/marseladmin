@@ -25,7 +25,8 @@
   background: var(--primary-bg);
 }
 
-.placeholderContent {
+.placeholderContent,
+.compressingState {
   display: flex;
   flex-direction: column;
   align-items: center;

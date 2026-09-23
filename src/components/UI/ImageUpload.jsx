@@ -9,6 +9,7 @@ export default function ImageUpload({
   placeholder = 'Click or drag to upload image'
 }) {
   const [dragOver, setDragOver] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef(null)
 
   // Camera states
@@ -29,12 +30,26 @@ export default function ImageUpload({
       alert('Please upload a valid image file.')
       return
     }
-    if (file.size > 200 * 1024) {
-      alert('File size should be less than 200KB.')
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size should be less than 10MB.')
       return
     }
     
-    onChange(file)
+    try {
+      setIsCompressing(true)
+      const options = {
+        maxSizeMB: 0.2, // Max size 200KB
+        maxWidthOrHeight: 1024,
+        useWebWorker: true
+      };
+      const compressedFile = await imageCompression(file, options);
+      onChange(compressedFile)
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      onChange(file)
+    } finally {
+      setIsCompressing(false)
+    }
   }
 
   const onDragOver = (e) => {
@@ -218,7 +233,13 @@ export default function ImageUpload({
           style={{ display: 'none' }}
         />
 
-        {previewUrl ? (
+        {isCompressing ? (
+          <div className={styles.compressingState}>
+            <div className={styles.cameraSpinner} style={{ borderColor: 'rgba(255, 69, 0, 0.2)', borderTopColor: 'var(--primary)' }} />
+            <p className={styles.text} style={{ marginTop: '12px' }}>Compressing Image...</p>
+            <p className={styles.subtext}>Optimizing to 200KB</p>
+          </div>
+        ) : previewUrl ? (
           <div className={styles.previewContainer}>
             <img src={previewUrl} alt="Product Preview" className={styles.preview} />
             <div className={styles.actionOverlay} onClick={(e) => e.stopPropagation()}>
@@ -246,7 +267,7 @@ export default function ImageUpload({
               <ImageIcon size={28} className={styles.mainIcon} />
             </div>
             <p className={styles.text}>{placeholder}</p>
-            <p className={styles.subtext}>PNG, JPG, WEBP (Max: 200KB).</p>
+            <p className={styles.subtext}>PNG, JPG, WEBP (Max: 10MB). Automatically compressed to 200KB.</p>
 
             <div className={styles.buttonGroup} onClick={(e) => e.stopPropagation()}>
               <button
