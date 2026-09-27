@@ -9,7 +9,7 @@ import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Table from '../components/UI/Table'
 import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
-import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
+import { firebase as supabase, uploadImage, deleteImage, BUCKETS } from '../lib/firebase'
 import { formatCurrency, stockColor, truncate, formatDate } from '../lib/utils'
 import { Eye, Edit3, Trash2, Video } from 'lucide-react'
 

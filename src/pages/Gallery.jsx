@@ -6,7 +6,7 @@ import EmptyState from '../components/UI/EmptyState'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Spinner from '../components/UI/Spinner'
 import ImageUpload from '../components/UI/ImageUpload'
-import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
+import { firebase as supabase, uploadImage, deleteImage, BUCKETS } from '../lib/firebase'
 import { Film, Trash2, Plus, Play, Edit3 } from 'lucide-react'
 
 export default function Gallery() {

@@ -5,7 +5,7 @@ import Button from '../components/UI/Button'
 import EmptyState from '../components/UI/EmptyState'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Table from '../components/UI/Table'
-import { supabase } from '../lib/supabase'
+import { firebase as supabase } from '../lib/firebase'
 import { Megaphone, Trash2, Edit3, Plus, Volume2 } from 'lucide-react'
 
 export default function Marquee() {

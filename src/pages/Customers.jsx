@@ -6,7 +6,7 @@ import EmptyState from '../components/UI/EmptyState'
 import Table from '../components/UI/Table'
 import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
-import { supabase } from '../lib/supabase'
+import { firebase as supabase } from '../lib/firebase'
 import { formatCurrency, formatDate, getInitials } from '../lib/utils'
 
 export default function Customers() {

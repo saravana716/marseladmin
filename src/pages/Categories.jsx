@@ -6,7 +6,7 @@ import ImageUpload from '../components/UI/ImageUpload'
 import EmptyState from '../components/UI/EmptyState'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Spinner from '../components/UI/Spinner'
-import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
+import { firebase as supabase, uploadImage, deleteImage, BUCKETS } from '../lib/firebase'
 import { Eye, Edit3, Trash2 } from 'lucide-react'
 
 export default function Categories() {

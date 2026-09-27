@@ -6,7 +6,7 @@ import EmptyState from '../components/UI/EmptyState'
 import Table from '../components/UI/Table'
 import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
-import { supabase } from '../lib/supabase'
+import { firebase as supabase } from '../lib/firebase'
 import { formatCurrency, formatDate, formatDateTime, ORDER_STATUSES, getInitials, truncate } from '../lib/utils'
 import { Plus, Trash2, Printer, Eye, Download, ShoppingBag, User, Package, FileText, CheckCircle } from 'lucide-react'
 
@@ -125,15 +125,25 @@ export default function Orders() {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, customer:customer_id(name, email, phone, address)')
-        .order('created_at', { ascending: false })
+      const [ordersRes, custRes] = await Promise.all([
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('customers').select('*')
+      ])
 
-      if (error) throw error
-      setOrders(data || [])
-      setFiltered(data || [])
+      const custMap = {}
+      if (custRes?.data) {
+        custRes.data.forEach(c => { custMap[c.id] = c })
+      }
+
+      const formatted = (ordersRes?.data || []).map(o => ({
+        ...o,
+        customer: o.customer || custMap[o.customer_id] || (o.customer_name ? { name: o.customer_name, email: o.customer_email, phone: o.customer_phone, address: o.customer_address } : null)
+      }))
+
+      setOrders(formatted)
+      setFiltered(formatted)
     } catch (err) {
+      console.error('Error fetching orders:', err)
       alert('Error fetching orders: ' + err.message)
     } finally {
       setLoading(false)
@@ -182,18 +192,32 @@ export default function Orders() {
   const handleOpenDetail = async (order) => {
     setSelectedOrder(order)
     setDetailModalOpen(true)
+
+    if (order.items && order.items.length > 0) {
+      return
+    }
+
     setModalLoading(true)
 
     try {
-      const { data: items, error } = await supabase
+      const { data: items } = await supabase
         .from('order_items')
-        .select('*, product:product_id(name, image_url)')
         .eq('order_id', order.id)
 
-      if (error) throw error
-      setSelectedOrder(prev => ({ ...prev, items: items || [] }))
+      const { data: products } = await supabase.from('products').select('*')
+      const prodMap = {}
+      if (products) products.forEach(p => { prodMap[p.id] = p })
+
+      const enrichedItems = (items || []).map(it => ({
+        ...it,
+        product_name: it.product_name || it.name || prodMap[it.product_id]?.name || 'Item',
+        unit_price: it.unit_price ?? it.price ?? 0,
+        product: it.product || prodMap[it.product_id] || { name: it.product_name, image_url: '' }
+      }))
+
+      setSelectedOrder(prev => ({ ...prev, items: enrichedItems }))
     } catch (err) {
-      alert('Error loading order details: ' + err.message)
+      console.error('Error loading order details:', err)
     } finally {
       setModalLoading(false)
     }
@@ -439,13 +463,22 @@ export default function Orders() {
 
     try {
       if (!order.items || order.items.length === 0) {
-        const { data: items, error } = await supabase
+        const { data: items } = await supabase
           .from('order_items')
-          .select('*, product:product_id(name, image_url)')
           .eq('order_id', order.id)
 
-        if (error) throw error
-        setInvoiceOrder(prev => ({ ...prev, items: items || [] }))
+        const { data: products } = await supabase.from('products').select('*')
+        const prodMap = {}
+        if (products) products.forEach(p => { prodMap[p.id] = p })
+
+        const enrichedItems = (items || []).map(it => ({
+          ...it,
+          product_name: it.product_name || it.name || prodMap[it.product_id]?.name || 'Item',
+          unit_price: it.unit_price ?? it.price ?? 0,
+          product: it.product || prodMap[it.product_id] || { name: it.product_name, image_url: '' }
+        }))
+
+        setInvoiceOrder(prev => ({ ...prev, items: enrichedItems }))
       }
     } catch (err) {
       console.error('Error fetching invoice items:', err.message)

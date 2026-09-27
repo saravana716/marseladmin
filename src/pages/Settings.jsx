@@ -4,7 +4,7 @@ import Modal from '../components/UI/Modal'
 import Button from '../components/UI/Button'
 import EmptyState from '../components/UI/EmptyState'
 import Table from '../components/UI/Table'
-import { supabase } from '../lib/supabase'
+import { firebase as supabase } from '../lib/firebase'
 import { Settings as SettingsIcon, Edit3 } from 'lucide-react'
 
 export default function Settings() {

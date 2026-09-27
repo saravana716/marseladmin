@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import styles from './AppLayout.module.css'
-import { supabase } from '../../lib/supabase'
+import { firebase as supabase } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 
 export default function AppLayout() {

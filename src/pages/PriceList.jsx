@@ -3,7 +3,7 @@ import styles from '../styles/PriceList.module.css'
 import Button from '../components/UI/Button'
 import ConfirmDialog from '../components/UI/ConfirmDialog'
 import Spinner from '../components/UI/Spinner'
-import { supabase, uploadImage, deleteImage, BUCKETS } from '../lib/supabase'
+import { firebase as supabase, uploadImage, deleteImage, BUCKETS } from '../lib/firebase'
 import {
   FileText,
   UploadCloud,
