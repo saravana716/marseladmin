@@ -114,6 +114,12 @@ class FirestoreQueryBuilder {
     return this
   }
 
+  neq(field, value) {
+    this.conditions.push(where(field, '!=', value))
+    this.filterConfigs.push({ field, op: '!=', val: value })
+    return this
+  }
+
   gte(field, value) {
     this.conditions.push(where(field, '>=', value))
     this.filterConfigs.push({ field, op: '>=', val: value })
@@ -155,29 +161,10 @@ class FirestoreQueryBuilder {
     return this
   }
 
-  async insert(data) {
-    try {
-      const items = Array.isArray(data) ? data : [data]
-      const inserted = []
-      const colRef = collection(db, this.collectionName)
-      for (const item of items) {
-        const itemCopy = { ...item, created_at: item.created_at || new Date().toISOString() }
-        let docRef
-        if (itemCopy.id) {
-          docRef = doc(db, this.collectionName, String(itemCopy.id))
-          await setDoc(docRef, itemCopy)
-        } else {
-          docRef = await addDoc(colRef, itemCopy)
-          itemCopy.id = docRef.id
-          await updateDoc(docRef, { id: docRef.id })
-        }
-        inserted.push(itemCopy)
-      }
-      return { data: Array.isArray(data) ? inserted : inserted[0], error: null }
-    } catch (error) {
-      console.error(`Error inserting into ${this.collectionName}:`, error)
-      return { data: null, error }
-    }
+  insert(data) {
+    this._pendingAction = 'insert'
+    this._pendingData = data
+    return this
   }
 
   update(data) {
@@ -228,6 +215,27 @@ class FirestoreQueryBuilder {
 
   async _executeQuery() {
     try {
+      if (this._pendingAction === 'insert') {
+        const items = Array.isArray(this._pendingData) ? this._pendingData : [this._pendingData]
+        const inserted = []
+        const colRef = collection(db, this.collectionName)
+        for (const item of items) {
+          const itemCopy = { ...item, created_at: item.created_at || new Date().toISOString() }
+          let docRef
+          if (itemCopy.id) {
+            docRef = doc(db, this.collectionName, String(itemCopy.id))
+            await setDoc(docRef, itemCopy)
+          } else {
+            docRef = await addDoc(colRef, itemCopy)
+            itemCopy.id = docRef.id
+            await updateDoc(docRef, { id: docRef.id })
+          }
+          inserted.push(itemCopy)
+        }
+        const resultData = Array.isArray(this._pendingData) ? inserted : inserted[0]
+        return { data: this.isSingle ? inserted[0] : resultData, error: null }
+      }
+
       if (this._pendingAction === 'update') {
         const snapshot = await this._getDocsSnapshot()
         const updated = []
@@ -256,6 +264,7 @@ class FirestoreQueryBuilder {
             for (const cond of this.filterConfigs) {
               const val = item[cond.field]
               if (cond.op === '==' && String(val) !== String(cond.val)) return false
+              if (cond.op === '!=' && String(val) === String(cond.val)) return false
               if (cond.op === '>=' && val < cond.val) return false
               if (cond.op === '<=' && val > cond.val) return false
               if (cond.op === 'in' && Array.isArray(cond.val) && !cond.val.includes(val)) return false

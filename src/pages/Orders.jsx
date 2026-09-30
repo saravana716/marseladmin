@@ -8,7 +8,7 @@ import Badge from '../components/UI/Badge'
 import Spinner from '../components/UI/Spinner'
 import { firebase as supabase } from '../lib/firebase'
 import { formatCurrency, formatDate, formatDateTime, ORDER_STATUSES, getInitials, truncate } from '../lib/utils'
-import { Plus, Trash2, Printer, Eye, Download, ShoppingBag, User, Package, FileText, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Printer, Eye, Download, ShoppingBag, User, Package, FileText, CheckCircle, Pencil } from 'lucide-react'
 
 function ProductSearchSelect({ products, value, onChange }) {
   const [query, setQuery] = useState('')
@@ -99,8 +99,9 @@ export default function Orders() {
   // Receipt preview modal state
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null)
 
-  // ─── ADD ORDER MODAL STATES ───
+  // ─── ADD / EDIT ORDER MODAL STATES ───
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editingOrderId, setEditingOrderId] = useState(null)
   const [addLoading, setAddLoading] = useState(false)
   const [productsCatalog, setProductsCatalog] = useState([])
   const [customersList, setCustomersList] = useState([])
@@ -171,6 +172,9 @@ export default function Orders() {
     setFiltered(result)
   }, [search, statusFilter, orders])
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       const { error } = await supabase
@@ -186,6 +190,26 @@ export default function Orders() {
       }
     } catch (err) {
       alert('Failed to update status: ' + err.message)
+    }
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      setDeleteLoading(true)
+      // Delete order items first
+      await supabase.from('order_items').delete().eq('order_id', orderId)
+      // Delete main order
+      const { error } = await supabase.from('orders').delete().eq('id', orderId)
+      if (error) throw error
+
+      setOrders(prev => prev.filter(o => o.id !== orderId))
+      setFiltered(prev => prev.filter(o => o.id !== orderId))
+      setDeleteConfirmId(null)
+      setDetailModalOpen(false)
+    } catch (err) {
+      alert('Failed to delete order: ' + err.message)
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -226,6 +250,7 @@ export default function Orders() {
   // ─── OPEN ADD ORDER MODAL ───
   const handleOpenAddOrder = async () => {
     try {
+      setEditingOrderId(null)
       setAddLoading(true)
       const [prodRes, custRes] = await Promise.all([
         supabase.from('products').select('id, serial_no, name, price, stock, image_url, type, quantity').order('name'),
@@ -259,6 +284,73 @@ export default function Orders() {
       setAddModalOpen(true)
     } catch (err) {
       alert('Error preparing Add Order form: ' + err.message)
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  // ─── OPEN EDIT ORDER MODAL ───
+  const handleOpenEditOrder = async (order) => {
+    try {
+      setEditingOrderId(order.id)
+      setAddLoading(true)
+
+      const [prodRes, custRes, itemsRes] = await Promise.all([
+        supabase.from('products').select('id, serial_no, name, price, stock, image_url, type, quantity').order('name'),
+        supabase.from('customers').select('id, name, email, phone, address').order('name'),
+        supabase.from('order_items').eq('order_id', order.id)
+      ])
+
+      if (prodRes.error) throw prodRes.error
+      if (custRes.error) throw custRes.error
+
+      const prods = prodRes.data || []
+      const custs = custRes.data || []
+      setProductsCatalog(prods)
+      setCustomersList(custs)
+
+      const prodMap = {}
+      prods.forEach(p => { prodMap[p.id] = p })
+
+      if (order.customer_id) {
+        setCustomerMode('existing')
+        setSelectedCustId(order.customer_id)
+        const c = custs.find(cust => cust.id === order.customer_id) || order.customer
+        setCustName(c?.name || '')
+        setCustEmail(c?.email || '')
+        setCustPhone(c?.phone || '')
+        setCustAddress(c?.address || '')
+      } else {
+        setCustomerMode('new')
+        setSelectedCustId('')
+        setCustName(order.customer?.name || '')
+        setCustEmail(order.customer?.email || '')
+        setCustPhone(order.customer?.phone || '')
+        setCustAddress(order.customer?.address || '')
+      }
+
+      setOrderStatus(order.status || 'Processing')
+      setOrderNotes(order.notes || '')
+
+      const loadedItems = (itemsRes.data || []).map(it => {
+        const prod = prodMap[it.product_id]
+        return {
+          productId: it.product_id || '',
+          productName: it.product_name || prod?.name || '',
+          unitPrice: it.unit_price ?? it.price ?? prod?.price ?? 0,
+          quantity: it.quantity || 1,
+          stock: prod ? prod.stock : 0
+        }
+      })
+
+      if (loadedItems.length === 0) {
+        loadedItems.push({ productId: '', productName: '', unitPrice: 0, quantity: 1, stock: 0 })
+      }
+
+      setOrderItems(loadedItems)
+      setAddModalOpen(true)
+    } catch (err) {
+      alert('Error loading order for editing: ' + err.message)
     } finally {
       setAddLoading(false)
     }
@@ -327,7 +419,7 @@ export default function Orders() {
   // Calculate Grand Total for Add Order form
   const grandTotal = orderItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
 
-  // ─── SAVE ADMIN ORDER (WITH STOCK REDUCTION) ───
+  // ─── SAVE ADMIN ORDER (CREATE OR EDIT) ───
   const handleSaveOrder = async (e) => {
     e.preventDefault()
 
@@ -381,74 +473,126 @@ export default function Orders() {
         finalCustId = newCust.id
       }
 
-      // 2. Insert Order Record
       const totalAmount = validItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
 
-      const { data: newOrder, error: orderErr } = await supabase
-        .from('orders')
-        .insert([{
-          customer_id: finalCustId || null,
+      let targetOrder = null
+
+      if (editingOrderId) {
+        // UPDATE EXISTING ORDER
+        const { error: updateErr } = await supabase
+          .from('orders')
+          .update({
+            customer_id: finalCustId || null,
+            status: orderStatus,
+            total_amount: totalAmount,
+            notes: orderNotes.trim() || 'Admin Order'
+          })
+          .eq('id', editingOrderId)
+
+        if (updateErr) throw updateErr
+
+        // Clear existing items and re-insert new items
+        await supabase.from('order_items').delete().eq('order_id', editingOrderId)
+
+        const itemsPayload = validItems.map(item => ({
+          order_id: editingOrderId,
+          product_id: item.productId || null,
+          product_name: item.productName,
+          quantity: item.quantity,
+          unit_price: item.unitPrice
+        }))
+
+        const { error: itemsErr } = await supabase
+          .from('order_items')
+          .insert(itemsPayload)
+
+        if (itemsErr) throw itemsErr
+
+        targetOrder = {
+          id: editingOrderId,
+          customer_id: finalCustId,
           status: orderStatus,
           total_amount: totalAmount,
-          notes: orderNotes.trim() || 'Admin Manual Order'
-        }])
-        .select('*, customer:customer_id(name, email, phone, address)')
-        .single()
+          notes: orderNotes.trim(),
+          customer: {
+            name: finalCustName,
+            email: finalCustEmail,
+            phone: finalCustPhone,
+            address: finalCustAddress
+          },
+          items: itemsPayload
+        }
+      } else {
+        // INSERT NEW ORDER
+        const { data: newOrder, error: orderErr } = await supabase
+          .from('orders')
+          .insert([{
+            customer_id: finalCustId || null,
+            status: orderStatus,
+            total_amount: totalAmount,
+            notes: orderNotes.trim() || 'Admin Manual Order'
+          }])
+          .select('*, customer:customer_id(name, email, phone, address)')
+          .single()
 
-      if (orderErr) throw orderErr
+        if (orderErr) throw orderErr
 
-      // 3. Insert Order Items Records
-      const itemsPayload = validItems.map(item => ({
-        order_id: newOrder.id,
-        product_id: item.productId || null,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice
-      }))
+        const itemsPayload = validItems.map(item => ({
+          order_id: newOrder.id,
+          product_id: item.productId || null,
+          product_name: item.productName,
+          quantity: item.quantity,
+          unit_price: item.unitPrice
+        }))
 
-      const { error: itemsErr } = await supabase
-        .from('order_items')
-        .insert(itemsPayload)
+        const { error: itemsErr } = await supabase
+          .from('order_items')
+          .insert(itemsPayload)
 
-      if (itemsErr) throw itemsErr
+        if (itemsErr) throw itemsErr
 
-      // 4. ─── REDUCE PRODUCT STOCK ───
-      for (const item of validItems) {
-        if (item.productId) {
-          const { data: prodData } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', item.productId)
-            .single()
-
-          if (prodData) {
-            const currentStock = prodData.stock || 0
-            const updatedStock = Math.max(0, currentStock - item.quantity)
-            await supabase
+        // Reduce Product Stock on new order
+        for (const item of validItems) {
+          if (item.productId) {
+            const { data: prodData } = await supabase
               .from('products')
-              .update({ stock: updatedStock })
+              .select('stock')
               .eq('id', item.productId)
+              .single()
+
+            if (prodData) {
+              const currentStock = prodData.stock || 0
+              const updatedStock = Math.max(0, currentStock - item.quantity)
+              await supabase
+                .from('products')
+                .update({ stock: updatedStock })
+                .eq('id', item.productId)
+            }
           }
+        }
+
+        targetOrder = {
+          ...newOrder,
+          customer: {
+            name: finalCustName,
+            email: finalCustEmail,
+            phone: finalCustPhone,
+            address: finalCustAddress
+          },
+          items: itemsPayload
         }
       }
 
       setAddModalOpen(false)
       fetchOrders()
 
-      // Automatically open 100% Invoice layout for this new order
-      handleOpenInvoice({
-        ...newOrder,
-        customer: {
-          name: finalCustName,
-          email: finalCustEmail,
-          phone: finalCustPhone,
-          address: finalCustAddress
-        },
-        items: itemsPayload
-      })
+      // Automatically open 100% Invoice layout for this order
+      if (targetOrder) {
+        handleOpenInvoice(targetOrder)
+      }
 
     } catch (err) {
-      alert('Error creating order: ' + err.message)
+      alert(`Error ${editingOrderId ? 'updating' : 'creating'} order: ` + err.message)
     } finally {
       setAddLoading(false)
     }
@@ -604,11 +748,16 @@ export default function Orders() {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: '6px' }}>
+                    <Button variant="outline" size="sm" onClick={() => handleOpenEditOrder(order)} title="Edit Order Items & Details">
+                      ✏️ Edit
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleOpenDetail(order)}>
                       👁️ View
                     </Button>
                     <Button variant="primary" size="sm" onClick={() => handleOpenInvoice(order)}>
                       📄 Invoice
+                    </Button>
+                    <Button variant="danger" size="sm" onClick={() => setDeleteConfirmId(order.id)} title="Delete Order" icon={<Trash2 size={15} />}>
                     </Button>
                   </div>
                 </td>
@@ -624,11 +773,11 @@ export default function Orders() {
         )}
       </div>
 
-      {/* ─── ADD ORDER MODAL ─── */}
+      {/* ─── ADD / EDIT ORDER MODAL ─── */}
       <Modal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        title="➕ Create New Order (Admin)"
+        title={editingOrderId ? `✏️ Edit Order #${editingOrderId.substring(0, 8).toUpperCase()}` : "➕ Create New Order (Admin)"}
         size="lg"
         footer={
           <>
@@ -636,7 +785,7 @@ export default function Orders() {
               Cancel
             </Button>
             <Button onClick={handleSaveOrder} loading={addLoading}>
-              💾 Save Order
+              {editingOrderId ? '💾 Update Order' : '💾 Save Order'}
             </Button>
           </>
         }
@@ -968,9 +1117,14 @@ export default function Orders() {
               Close
             </Button>
             {selectedOrder && (
-              <Button onClick={() => handleOpenInvoice(selectedOrder)} icon={<Printer size={16} />}>
-                📄 View / Print Invoice
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => { setDetailModalOpen(false); handleOpenEditOrder(selectedOrder); }} icon={<Pencil size={16} />}>
+                  ✏️ Edit Order
+                </Button>
+                <Button onClick={() => handleOpenInvoice(selectedOrder)} icon={<Printer size={16} />}>
+                  📄 View / Print Invoice
+                </Button>
+              </>
             )}
           </>
         }
@@ -1082,6 +1236,28 @@ export default function Orders() {
             <img loading="lazy" src={receiptPreviewUrl} alt="Payment Receipt Full View" className={styles.fullReceiptImg} />
           </div>
         )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        title="🗑️ Confirm Order Deletion"
+        size="sm"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={() => handleDeleteOrder(deleteConfirmId)} loading={deleteLoading} icon={<Trash2 size={16} />}>
+              Delete Order
+            </Button>
+          </div>
+        }
+      >
+        <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-700)' }}>
+          Are you sure you want to delete this order? This action cannot be undone.
+        </p>
       </Modal>
     </div>
   )

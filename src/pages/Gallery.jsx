@@ -115,14 +115,14 @@ export default function Gallery() {
     try {
       let publicUrl = existingVideoUrl
       if (videoFile) {
-        setUploadProgress('Uploading video to Supabase Storage...')
+        setUploadProgress('Uploading video to Firebase Storage...')
         publicUrl = await uploadImage(videoFile, BUCKETS.GALLERY, 'vid-')
       }
 
       let thumbnailUrl = existingThumbnailUrl
       // Note: thumbnailFile can be a File object (new upload), string URL (existing), or null
       if (thumbnailFile && thumbnailFile instanceof File) {
-        setUploadProgress('Uploading thumbnail to Supabase Storage...')
+        setUploadProgress('Uploading thumbnail to Firebase Storage...')
         thumbnailUrl = await uploadImage(thumbnailFile, BUCKETS.GALLERY, 'thumb-')
       }
 

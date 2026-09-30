@@ -152,7 +152,7 @@ export default function Settings() {
         <EmptyState
           icon="⚙️"
           title="No settings found"
-          text="Initialize your store settings table in your Supabase SQL editor to manage Minimum Order Amount and other rules."
+          text="No store settings configured. Update settings above to set rules."
         />
       )}
 
